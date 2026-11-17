@@ -104,11 +104,19 @@ h2 em{color:var(--burdeos)}
 .wish{min-height:64px;margin-top:16px;font-family:var(--serif);font-style:italic;font-size:22px;color:var(--burdeos)}
 
 /* STATS */
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:30px}
-@media(min-width:700px){.stats{grid-template-columns:repeat(4,1fr)}}
-.stat{background:#fff;border-radius:16px;padding:22px 10px;box-shadow:0 8px 22px rgba(90,60,30,.1)}
-.stat b{display:block;font-family:var(--serif);font-size:clamp(24px,5vw,34px);color:var(--burdeos)}
-.stat span{font-size:12px;color:var(--soft)}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:30px auto 0;max-width:640px}
+@media(min-width:700px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{perspective:900px;aspect-ratio:3/4;display:block;width:100%}
+.card .in{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,.8,.3,1)}
+.card.on .in{transform:rotateY(180deg)}
+.card .f,.card .bk{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-shadow:0 10px 24px rgba(90,60,30,.18)}
+.card .f{background:var(--burdeos);background-image:radial-gradient(circle at 20% 15%,rgba(255,255,255,.28),transparent 45%),repeating-linear-gradient(45deg,transparent 0 12px,rgba(255,255,255,.07) 12px 24px);color:#fff;font-size:44px}
+.card .f small{font-size:12px;letter-spacing:.2em;text-transform:uppercase;margin-top:10px;opacity:.9}
+.card .bk{transform:rotateY(180deg);background:#fff;text-align:center;gap:8px}
+.card .bk i{font-style:normal;font-size:34px}
+.card .bk b{font-family:var(--serif);font-weight:600;font-size:17px;color:var(--burdeos)}
+.card .bk span{font-size:14px;line-height:1.5;color:var(--ink)}
+.card:nth-child(odd){transform:rotate(-1.2deg)}.card:nth-child(even){transform:rotate(1.2deg)}
 
 /* DEDICATORIAS */
 .wall{columns:1;gap:16px;margin-top:30px;text-align:left}
@@ -223,9 +231,10 @@ h2 em{color:var(--burdeos)}
 
 <!-- ============ STATS ============ -->
 <section id="statsSec" class="center reveal">
-  <p class="eyebrow">Datos curiosos</p>
-  <h2 id="statsTitle"></h2>
-  <div class="stats" id="stats"></div>
+  <p class="eyebrow">Para tu nuevo año</p>
+  <h2>Elige una <em>tarjeta</em></h2>
+  <p class="lead">Toca las tarjetas y descubre un deseo en cada una.</p>
+  <div class="cards" id="stats"></div>
 </section>
 
 <!-- ============ DEDICATORIAS ============ -->
@@ -294,6 +303,16 @@ const DEDICATORIAS = [
   { de:"✨",  texto:"Que pases un día hermoso, rodeada de cariño. ¡Feliz cumpleaños!" },
   { de:"✨",    texto:"Que este año te traiga mucha suerte y muchas risas, {nombre}." },
   { de:"✨", texto:"Eres de esas personas que alegran a los demás sin darse cuenta. Disfruta tu día." }
+];
+
+/* 🎴 TARJETAS DE DESEOS: emoji, título y deseo. Ella toca cada tarjeta y se da la vuelta. */
+const TARJETAS = [
+  { emoji:"🍀", titulo:"Suerte",     texto:"Que este año la suerte esté de tu lado en todo lo que empieces." },
+  { emoji:"😄", titulo:"Risas",      texto:"Que no te falten días de reírte hasta que te duela la barriga." },
+  { emoji:"🌟", titulo:"Metas",      texto:"Que cumplas eso que tanto quieres lograr. Tú puedes con eso y más." },
+  { emoji:"💗", titulo:"Cariño",     texto:"Que estés siempre rodeada de gente que te quiere y te cuida." },
+  { emoji:"✈️", titulo:"Aventuras",  texto:"Que este año tengas lugares nuevos que conocer y recuerdos que guardar." },
+  { emoji:"🕊️", titulo:"Paz",        texto:"Que tengas tranquilidad, salud y días buenos de principio a fin." }
 ];
 
 const REGALO = {
@@ -535,17 +554,12 @@ $('#relight').onclick=()=>{ wished=false; flames.forEach(f=>f.classList.remove('
 
 /* ================== STATS ================== */
 function renderStats(){
-  const born = zonedMidnightUTC(B.y,B.m,B.d);
-  const ref = status().st==='today' ? Math.min(Date.now(), Infinity) : Date.now();
-  const days = Math.floor((ref-born)/864e5);
-  const items = [
-    [days.toLocaleString('es'),'días de vida'],
-    [(days*24).toLocaleString('es'),'horas de vida'],
-    [Math.floor(days/7).toLocaleString('es'),'semanas'],
-    [Math.round(days*5.5).toLocaleString('es'),'veces que has reído (aprox.)']
-  ];
-  $('#statsTitle').innerHTML = `Ya llevas <em>${days.toLocaleString('es')} días</em> brillando`;
-  $('#stats').innerHTML = items.map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+  const box=$('#stats');
+  box.innerHTML = TARJETAS.map((t,i)=>`<button type="button" class="card" aria-label="Tarjeta ${i+1}: toca para ver tu deseo"><span class="in"><span class="f">🎁<small>Toca</small></span><span class="bk"><i>${esc(t.emoji)}</i><b>${esc(t.titulo)}</b><span>${esc(fill(t.texto))}</span></span></span></button>`).join('');
+  box.querySelectorAll('.card').forEach(c=>c.addEventListener('click',()=>{
+    const on=c.classList.toggle('on');
+    if(on){ const r=c.getBoundingClientRect(); burst(r.left+r.width/2,r.top+r.height/2,45); }
+  }));
 }
 
 /* ================== DEDICATORIAS ================== */
